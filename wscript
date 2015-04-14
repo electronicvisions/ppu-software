@@ -5,6 +5,7 @@ def configure(conf):
     conf.find_program('powerpc-linux-eabi-objcopy', var='PPC_OBJCOPY', mandatory=True)
     conf.find_program('powerpc-linux-eabi-gcc', var='PPC_CC', mandatory=True)
 
+    conf.env.SYSTEM = 'SYSTEM_HICANN_DLS_MINI'
     conf.env.PPC_CSHELL_LINKER_SCRIPT = conf.path.make_node('cshell_linker.x').abspath()
     conf.env.PPC_CFLAGS = [
         '-Wall',
