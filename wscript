@@ -8,6 +8,7 @@ def configure(conf):
     conf.env.SYSTEM = 'SYSTEM_HICANN_DLS_MINI'
     conf.env.PPC_CSHELL_LINKER_SCRIPT = conf.path.make_node('cshell_linker.x').abspath()
     conf.env.PPC_CFLAGS = [
+        '-ffreestanding',
         '-Wall',
         '-O2',
         '-msdata=none',
