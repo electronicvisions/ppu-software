@@ -37,7 +37,7 @@
 /** Constants **/
 static const int loc_a = 0;
 static const int loc_b = 1;
-static const time_base_t update_period = 500 * USEC;
+static const time_base_t update_period = 100 * USEC;
 static const int as_size = 400;
 
 
@@ -63,8 +63,10 @@ ATTRIB_UNUSED static void compute_mult_stdp() {
   fxv_addbfs(VR_TMP, VR_TMP_1, VR_OFFSET);
 
   fxv_subbfs(VR_A, VR_TMP_0, VR_TMP);
-  fxv_shb(VR_A, VR_A, 2);
+  /*fxv_shb(VR_A, VR_A, 2);*/
   /*fxv_subbfs(VR_A, VR_TMP, VR_OFFSET);*/
+  /*fxv_shb(VR_TMP, VR_A, -3);*/
+  /*fxv_shb(VR_A, VR_TMP, 3);*/
   fxv_cmpb(VR_A);
 
   fxv_shb(VR_WIN, VR_WEIGHT, 1);
@@ -105,8 +107,9 @@ ATTRIB_UNUSED static void compute_pass_through() {
   fxv_shb(VR_TMP_1, VR_ACAUSAL, -1);
 
   fxv_subbfs(VR_A, VR_TMP_0, VR_TMP_1);
-  fxv_subbfs(VR_TMP, VR_A, VR_OFFSET);
-  fxv_shb(VR_WEIGHT, VR_TMP, 2);
+  fxv_subbfs(VR_WEIGHT, VR_A, VR_OFFSET);
+  /*fxv_subbfs(VR_TMP, VR_A, VR_OFFSET);*/
+  /*fxv_shb(VR_WEIGHT, VR_TMP, 2);*/
 }
 
 
@@ -169,7 +172,7 @@ void start() {
   i = 0;
   j = 0;
   /*while( 1 ) {*/
-  for(i=0; i<1; ) {
+  for(i=0; i<20; ) {
     // record current time
     t = get_time_base();
 
