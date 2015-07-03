@@ -10,7 +10,7 @@ def configure(conf):
     conf.env.PPC_CFLAGS = [
         '-ffreestanding',
         '-Wall',
-        '-O2',
+        '-Og',
         '-msdata=none',
         '-mstrict-align',
         '-msoft-float',
@@ -41,6 +41,19 @@ def build(bld):
             's2pplib/include'
         ],
         target = bld.path.find_or_declare('synram.raw'),
+        cshell = 'cshell.s',
+        features = 'ppu_program',
+        is_copy = True
+    )
+
+
+    bld(
+        name = 'create_ppu_sweep',
+        source = 'ppu_sweep.c' + s2pplib_source,
+        includes = [
+            's2pplib/include',
+        ],
+        target = bld.path.find_or_declare('ppu_sweep.raw'),
         cshell = 'cshell.s',
         features = 'ppu_program',
         is_copy = True
