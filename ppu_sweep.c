@@ -8,6 +8,7 @@
 #include <attrib.h>
 
 #define USEC (98)
+#define CADC_NOISE_BITS (4)
 
 
 /** Definitions for vector registers **/
@@ -32,12 +33,13 @@
 #define VR_LAMBDA 18
 #define VR_WOUT   19
 #define VR_OFFSET 20
+#define VR_TMP_2  21
 
 
 /** Constants **/
 static const int loc_a = 0;
 static const int loc_b = 1;
-static const time_base_t update_period = 100 * USEC;
+static const time_base_t update_period = 1000 * USEC;
 static const int as_size = 400;
 
 
@@ -56,13 +58,24 @@ void cadc_read(fxv_array_t* causal, fxv_array_t* acausal, int loc) {
   sync();
 }
 
+ATTRIB_UNUSED static void compute_a() {
+  fxv_shb(VR_TMP_0, VR_CAUSAL, -CADC_NOISE_BITS);
+  fxv_shb(VR_TMP_1, VR_ACAUSAL, -CADC_NOISE_BITS);
+
+  fxv_subbfs(VR_TMP, VR_TMP_0, VR_TMP_1);
+  /*fxv_subbfs(VR_WEIGHT, VR_A, VR_OFFSET);*/
+  fxv_subbfs(VR_TMP_2, VR_TMP, VR_OFFSET);
+  fxv_shb(VR_A, VR_TMP_2, CADC_NOISE_BITS-1);
+}
+
 ATTRIB_UNUSED static void compute_mult_stdp() {
-  fxv_shb(VR_TMP_0, VR_CAUSAL, -1);
-  fxv_shb(VR_TMP_1, VR_ACAUSAL, -1);
+  compute_a();
+  /*fxv_shb(VR_TMP_0, VR_CAUSAL, -CADC_NOISE_BITS);*/
+  /*fxv_shb(VR_TMP_1, VR_ACAUSAL, -CADC_NOISE_BITS);*/
 
-  fxv_addbfs(VR_TMP, VR_TMP_1, VR_OFFSET);
+  /*fxv_addbfs(VR_TMP, VR_TMP_1, VR_OFFSET);*/
 
-  fxv_subbfs(VR_A, VR_TMP_0, VR_TMP);
+  /*fxv_subbfs(VR_A, VR_TMP_0, VR_TMP);*/
   /*fxv_shb(VR_A, VR_A, 2);*/
   /*fxv_subbfs(VR_A, VR_TMP, VR_OFFSET);*/
   /*fxv_shb(VR_TMP, VR_A, -3);*/
@@ -103,13 +116,8 @@ ATTRIB_UNUSED static void compute_inc() {
 
 
 ATTRIB_UNUSED static void compute_pass_through() {
-  fxv_shb(VR_TMP_0, VR_CAUSAL, -1);
-  fxv_shb(VR_TMP_1, VR_ACAUSAL, -1);
-
-  fxv_subbfs(VR_A, VR_TMP_0, VR_TMP_1);
-  fxv_subbfs(VR_WEIGHT, VR_A, VR_OFFSET);
-  /*fxv_subbfs(VR_TMP, VR_A, VR_OFFSET);*/
-  /*fxv_shb(VR_WEIGHT, VR_TMP, 2);*/
+  compute_a();
+  fxv_mov(VR_WEIGHT, VR_A);
 }
 
 
@@ -140,11 +148,13 @@ void start() {
 
   // correct for CADC bug
   fxv_addbm(VR_CAUSAL, VR_CAUSAL, VR_NULL_C);
+  fxv_shb(VR_CAUSAL, VR_CAUSAL, -CADC_NOISE_BITS);
   fxv_addbm(VR_ACAUSAL, VR_ACAUSAL, VR_NULL_A);
+  fxv_shb(VR_ACAUSAL, VR_ACAUSAL, -CADC_NOISE_BITS);
 
   // determine offset
-  fxv_subbm(VR_TMP, VR_CAUSAL, VR_ACAUSAL);
-  fxv_shb(VR_OFFSET, VR_TMP, -1); // make fractional positive number
+  fxv_subbm(VR_OFFSET, VR_CAUSAL, VR_ACAUSAL);
+  /*fxv_shb(VR_OFFSET, VR_TMP, -CADC_NOISE_BITS); // make fractional positive number*/
 
   // subtract margin for noise
   /*fxv_subbm(VR_NULL_C, VR_NULL_C, 16);*/
@@ -171,15 +181,16 @@ void start() {
   // loop for weight update
   i = 0;
   j = 0;
-  /*while( 1 ) {*/
-  for(i=0; i<20; ) {
+  while( 1 ) {
+  /*for(i=0; i<20; ) {*/
+  /*{*/
     // record current time
     t = get_time_base();
 
     cadc_load_causal(VR_CAUSAL, loc_a);
     cadc_load_acausal_buffered(VR_ACAUSAL, loc_a);
 
-    syn_reset(loc_a, VR_RST, COND_ALWAYS);
+    /*syn_reset(loc_a, VR_RST, COND_ALWAYS);*/
 
     /*fxv_subbm(VR_CAUSAL, VR_CAUSAL, VR_NULL_C);*/
     /*fxv_subbm(VR_ACAUSAL, VR_ACAUSAL, VR_NULL_A);*/
@@ -190,6 +201,9 @@ void start() {
     compute_mult_stdp();
     /*compute_inc();*/
     /*compute_pass_through();*/
+
+    syn_reset(loc_a, VR_RST, COND_GT);
+    syn_reset(loc_a, VR_RST, COND_LT);
 
     fxv_store_array(&w, VR_WEIGHT);
     fxv_store_array(&c, VR_CAUSAL);
