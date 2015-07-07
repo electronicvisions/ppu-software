@@ -189,6 +189,8 @@ void start() {
 
     cadc_load_causal(VR_CAUSAL, loc_a);
     cadc_load_acausal_buffered(VR_ACAUSAL, loc_a);
+    /*cadc_load_vreset_c(VR_CAUSAL, loc_a);*/
+    /*cadc_load_vreset_a_buffered(VR_ACAUSAL, loc_a);*/
 
     /*syn_reset(loc_a, VR_RST, COND_ALWAYS);*/
 
