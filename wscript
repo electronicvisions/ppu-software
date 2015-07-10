@@ -60,6 +60,19 @@ def build(bld):
     )
 
 
+    bld(
+        name = 'create_rstdp',
+        source = 'rstdp.c lif.c' + s2pplib_source,
+        includes = [
+            's2pplib/include',
+        ],
+        target = bld.path.find_or_declare('rstdp.raw'),
+        cshell = 'cshell.s',
+        features = 'ppu_program',
+        is_copy = True
+    )
+
+
 
 from waflib import Task, TaskGen
 from waflib.Tools import c_preproc
