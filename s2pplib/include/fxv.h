@@ -97,6 +97,7 @@ typedef enum {
 #define fxv_mahfs(x, y, z) _fxv_insn3("fxvmahfs", x, y, z)
 #define fxv_mahfs_gt(x, y, z) _fxv_insn3_cond("fxvmahfs", x, y, z, 1)
 #define fxv_mahfs_lt(x, y, z) _fxv_insn3_cond("fxvmahfs", x, y, z, 2)
+#define fxv_matachfs(x, y) _fxv_insn2("fxvmatachfs", x, y)
 #define fxv_mtachf(x) _fxv_insn1("fxvmtachf", x)
 
 // fractional halfword arithmetic
