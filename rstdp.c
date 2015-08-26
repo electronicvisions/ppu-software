@@ -19,8 +19,8 @@ typedef struct {
 } spike_t;
 
 typedef struct {
-  uint8_t* signal;
   uint8_t monitor_neuron;
+  uint8_t* signal;
   spike_t* stimulation;
   uint32_t stimulation_size;
 } rstdp_config_t;
@@ -31,9 +31,9 @@ typedef struct {
 } rstdp_result_t;
 
 
-int16_t trace[TRACE_SIZE];
-spike_t stim[STIM_SIZE];
-uint8_t signal;
+int16_t trace[TRACE_SIZE] ATTRIB_ALIGN_WORD;
+spike_t stim[STIM_SIZE] ATTRIB_ALIGN_WORD;
+uint8_t signal ATTRIB_ALIGN_WORD;
 fxv_array_t state;
 
 
