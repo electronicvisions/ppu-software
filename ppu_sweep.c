@@ -8,7 +8,7 @@
 #include <attrib.h>
 
 #define USEC (98)
-#define CADC_NOISE_BITS (4)
+#define CADC_NOISE_BITS (1)
 
 
 /** Definitions for vector registers **/
@@ -34,16 +34,23 @@
 #define VR_WOUT   19
 #define VR_OFFSET 20
 #define VR_TMP_2  21
+#define VR_THRESH 22
 
 
 /** Constants **/
 static const int loc_a = 0;
 static const int loc_b = 1;
-static const time_base_t update_period = 1000 * USEC;
+/*static const time_base_t update_period = 1000 * USEC;*/
+static const time_base_t update_period = 10 * USEC;
 static const int as_size = 400;
 
 
-volatile uint32_t* signal = (uint32_t*)0x3000;
+volatile uint32_t* signal       = (uint32_t*)0x3000;
+volatile uint32_t* param_thresh = (uint32_t*)(0x3900 + 0);
+volatile uint32_t* param_weight = (uint32_t*)(0x3900 + 4);
+volatile uint32_t* param_wmax   = (uint32_t*)(0x3900 + 8);
+volatile uint32_t* param_lam    = (uint32_t*)(0x3900 + 12);
+volatile uint32_t* param_c      = (uint32_t*)(0x3900 + 16);
 
 
 void cadc_read(fxv_array_t* causal, fxv_array_t* acausal, int loc) {
@@ -59,13 +66,40 @@ void cadc_read(fxv_array_t* causal, fxv_array_t* acausal, int loc) {
 }
 
 ATTRIB_UNUSED static void compute_a() {
+  // check threshold
+  /*fxv_subbm(VR_TMP_0, VR_CAUSAL, VR_THRESH);*/
+  /*fxv_subbm(VR_TMP_1, VR_ACAUSAL, VR_THRESH);*/
+  /*fxv_splatb(VR_TMP, 0);*/
+  /*fxv_cmpb(VR_TMP_0);*/
+  /*fxv_sel_gt(VR_CAUSAL, VR_OFFSET, VR_TMP_0);*/
+  /*fxv_cmpb(VR_TMP_1);*/
+  /*fxv_sel_gt(VR_ACAUSAL, VR_TMP, VR_TMP_1);*/
+
+  // shift out noise bits
   fxv_shb(VR_TMP_0, VR_CAUSAL, -CADC_NOISE_BITS);
   fxv_shb(VR_TMP_1, VR_ACAUSAL, -CADC_NOISE_BITS);
 
+  // compute difference
   fxv_subbfs(VR_TMP, VR_TMP_0, VR_TMP_1);
-  /*fxv_subbfs(VR_WEIGHT, VR_A, VR_OFFSET);*/
+
+#if CADC_NOISE_BITS > 1
   fxv_subbfs(VR_TMP_2, VR_TMP, VR_OFFSET);
   fxv_shb(VR_A, VR_TMP_2, CADC_NOISE_BITS-1);
+#else
+  fxv_subbfs(VR_A, VR_TMP, VR_OFFSET);
+#endif
+
+  // thresholding
+  fxv_splatb(VR_TMP, 0);
+  fxv_subbfs(VR_TMP_0, VR_A, VR_THRESH);
+  fxv_addbfs(VR_TMP_1, VR_A, VR_THRESH);
+  fxv_cmpb(VR_TMP_0);
+  fxv_sel_gt(VR_TMP_0, VR_TMP, VR_A);
+  fxv_cmpb(VR_TMP_1);
+  fxv_sel_lt(VR_TMP_1, VR_TMP, VR_A);
+  fxv_cmpb(VR_A);
+  fxv_sel_gt(VR_A, VR_TMP_1, VR_TMP_0);
+  fxv_cmpb(VR_A);
 }
 
 ATTRIB_UNUSED static void compute_mult_stdp() {
@@ -80,7 +114,7 @@ ATTRIB_UNUSED static void compute_mult_stdp() {
   /*fxv_subbfs(VR_A, VR_TMP, VR_OFFSET);*/
   /*fxv_shb(VR_TMP, VR_A, -3);*/
   /*fxv_shb(VR_A, VR_TMP, 3);*/
-  fxv_cmpb(VR_A);
+  /*fxv_cmpb(VR_A);*/
 
   fxv_shb(VR_WIN, VR_WEIGHT, 1);
 
@@ -125,13 +159,13 @@ void start() {
   fxv_array_t a, c, w, diff, offset;
   time_base_t t;
   int i, j;
-  uint8_t as[as_size];
+  /*uint8_t as[as_size];*/
 
-  *signal = 0;
+  /**signal = 0;*/
   fxv_zero_vrf();  // clear registers
 
-  for(i=0; i<as_size; ++i)
-    as[i] = 0;
+  /*for(i=0; i<as_size; ++i)*/
+    /*as[i] = 0;*/
 
   // reset correlation
   fxv_splatb(VR_RST, RST_CAUSAL | RST_ACAUSAL);
@@ -164,8 +198,13 @@ void start() {
   /*sync();*/
   /*mailbox_write(2 * sizeof(fxv_array_t), (uint8_t*)&a, sizeof(fxv_array_t));*/
 
+  // set threshold on a+ and a-
+  /*fxv_splatb(VR_THRESH, 4);*/
+  fxv_splatb(VR_THRESH, 10);
+
   // set weights to initial value
-  fxv_splatb(VR_WEIGHT, 0x20);
+  /*fxv_splatb(VR_WEIGHT, 0x20);*/
+  fxv_splatb(VR_WEIGHT, 0x30);
 
   // init parameters
   fxv_splatb(VR_WMAX, F8_MAX);
@@ -177,6 +216,23 @@ void start() {
 
   // wait for signal
   while( !*signal );
+
+  // load parameters
+  /*asm volatile (*/
+      /*[>"lwz 9, 0x3004(0)\n\t"<]*/
+      /*"lis 9, 0\n\t"*/
+      /*"addi 9, 9, 0x20\n\t"*/
+      /*"fxvsplatb 6, 9\n\t"*/
+    /*: [> no output <]*/
+    /*: [> no input <]*/
+    /*: "9" [> clobber <]*/
+  /*);*/
+  fxv_splatb(VR_WEIGHT, *param_weight);
+  fxv_splatb(VR_THRESH, *param_thresh);
+  fxv_splatb(VR_WMAX, *param_wmax);
+  fxv_splatb(VR_LAMBDA, *param_lam);
+  fxv_splatb(VR_C, *param_c);
+
 
   // loop for weight update
   i = 0;
@@ -214,22 +270,26 @@ void start() {
     fxv_store_array(&offset, VR_OFFSET);
     sync();
 
-    int8_t x = *((int8_t*)(&c) + 4);
-    int8_t y = *((int8_t*)(&a) + 4);
-    int8_t z = *((int8_t*)(&diff) + 4);
-    if( (j < as_size) && (z != 0) ) {
-        as[j++] = x;
-        as[j++] = y;
-        as[j++] = z;
-    }
+    /*int8_t x = *((int8_t*)(&c) + 4);*/
+    /*int8_t y = *((int8_t*)(&a) + 4);*/
+    /*int8_t z = *((int8_t*)(&diff) + 4);*/
+    /*if( (j < as_size) && (z != 0) ) {*/
+        /*as[j++] = x;*/
+        /*as[j++] = y;*/
+        /*as[j++] = z;*/
+    /*}*/
 
     mailbox_write(0 * sizeof(fxv_array_t), (uint8_t*)&w, sizeof(fxv_array_t));
-    mailbox_write(1 * sizeof(fxv_array_t), (uint8_t*)&offset, sizeof(fxv_array_t));
+    /*mailbox_write(1 * sizeof(fxv_array_t), (uint8_t*)&offset, sizeof(fxv_array_t));*/
+    /*mailbox_write(1 * sizeof(fxv_array_t), (uint8_t*)&diff, sizeof(fxv_array_t));*/
     /*mailbox_write(1 * sizeof(fxv_array_t), (uint8_t*)&c, sizeof(fxv_array_t));*/
     /*mailbox_write(2 * sizeof(fxv_array_t), (uint8_t*)&a, sizeof(fxv_array_t));*/
-    mailbox_write(3 * sizeof(fxv_array_t), (uint8_t*)&i, sizeof(i));
+    /*mailbox_write(3 * sizeof(fxv_array_t), (uint8_t*)&i, sizeof(i));*/
     /*mailbox_write(3 * sizeof(fxv_array_t) + sizeof(i), (uint8_t*)&(w.bytes[4]), 4);*/
-    mailbox_write(3 * sizeof(fxv_array_t) + sizeof(i), (uint8_t*)as, as_size);
+    /*mailbox_write(3 * sizeof(fxv_array_t) + sizeof(i), (uint8_t*)as, as_size);*/
+    mailbox_write(1 * sizeof(fxv_array_t), (uint8_t*)param_weight, sizeof(uint32_t));
+
+    /**signal = 0x42000000 + i;*/
 
     // wait until next loop
     while( (get_time_base() - t) < update_period );

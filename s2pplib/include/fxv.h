@@ -125,7 +125,21 @@ typedef enum {
 
 // special operations
 #define fxv_splath(x, y) _fxv_insn_gpr1("fxvsplath", x, y)
-#define fxv_splatb(x, y) _fxv_insn_gpr1("fxvsplatb", x, y)
+
+/** Bugfix for fxvsplatb in HICANN-DLS v1 !
+ * This instruction has incorrect hazard detection for the general-purpose register
+ * argument. E.g.:
+ *   lis r9, 15
+ *   fxvsplatb 1, r9
+ * will use the old value of register r9.
+ *
+ * The fix uses the fxvsplath instruction, which does hazard detection correctly. */
+//#define fxv_splatb(x, y) _fxv_insn_gpr1("fxvsplatb", x, y)
+#define _fxv_splatb(rt, gpra) \
+  asm volatile("fxvsplath " #rt ", %[a]" \
+      :: [a] "r"( (( (gpra) & 0xff) << 8) | ( (gpra) & 0xff) ))
+#define fxv_splatb(x, y) _fxv_splatb(x, y)
+/* End of bugfix for fxvsplatb */
 
 // shift operations
 #define fxv_shh(x, y, z) _fxv_insn3("fxvshh", x, y, z)
