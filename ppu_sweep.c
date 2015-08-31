@@ -104,17 +104,6 @@ ATTRIB_UNUSED static void compute_a() {
 
 ATTRIB_UNUSED static void compute_mult_stdp() {
   compute_a();
-  /*fxv_shb(VR_TMP_0, VR_CAUSAL, -CADC_NOISE_BITS);*/
-  /*fxv_shb(VR_TMP_1, VR_ACAUSAL, -CADC_NOISE_BITS);*/
-
-  /*fxv_addbfs(VR_TMP, VR_TMP_1, VR_OFFSET);*/
-
-  /*fxv_subbfs(VR_A, VR_TMP_0, VR_TMP);*/
-  /*fxv_shb(VR_A, VR_A, 2);*/
-  /*fxv_subbfs(VR_A, VR_TMP, VR_OFFSET);*/
-  /*fxv_shb(VR_TMP, VR_A, -3);*/
-  /*fxv_shb(VR_A, VR_TMP, 3);*/
-  /*fxv_cmpb(VR_A);*/
 
   fxv_shb(VR_WIN, VR_WEIGHT, 1);
 
@@ -130,6 +119,80 @@ ATTRIB_UNUSED static void compute_mult_stdp() {
 
   fxv_shb(VR_WEIGHT, VR_WOUT, -1);
 }
+
+ATTRIB_UNUSED static void compute_mult_stdp_symm() {
+  compute_a();
+
+  fxv_shb(VR_WIN, VR_WEIGHT, 1);
+
+  fxv_subbfs(VR_U, VR_WMAX, VR_WIN);
+  fxv_mulbfs(VR_T, VR_U, VR_LAMBDA);
+  fxv_mulbfs(VR_V, VR_U, VR_C);
+
+  fxv_mtacbf(VR_WIN);
+  fxv_mabfs(VR_WOUT_0, VR_A, VR_T);
+  fxv_mabfs(VR_WOUT_1, VR_A, VR_V);
+  fxv_sel_lt(VR_WOUT, VR_WOUT_0, VR_WOUT_1); // VR_WOUT <- VR_WOUT_0 if !lt else VR_WOUT_1
+  fxv_sel_eq(VR_WOUT, VR_WOUT, VR_WIN);      // VR_WOUT <- VR_WIN if eq else VR_WOUT
+
+  fxv_shb(VR_WEIGHT, VR_WOUT, -1);
+}
+
+ATTRIB_UNUSED static void compute_mult_stdp_symm_neg() {
+  compute_a();
+
+  fxv_shb(VR_WIN, VR_WEIGHT, 1);
+
+  fxv_mulbfs(VR_T, VR_LAMBDA, VR_WIN);
+  fxv_mulbfs(VR_V, VR_C, VR_WIN);
+
+  fxv_mtacbf(VR_WIN);
+  fxv_mabfs(VR_WOUT_0, VR_A, VR_T);
+  fxv_mabfs(VR_WOUT_1, VR_A, VR_V);
+  fxv_sel_lt(VR_WOUT, VR_WOUT_0, VR_WOUT_1); // VR_WOUT <- VR_WOUT_0 if !lt else VR_WOUT_1
+  fxv_sel_eq(VR_WOUT, VR_WOUT, VR_WIN);      // VR_WOUT <- VR_WIN if eq else VR_WOUT
+
+  fxv_shb(VR_WEIGHT, VR_WOUT, -1);
+}
+
+ATTRIB_UNUSED static void compute_box() {
+  compute_a();
+
+  fxv_shb(VR_WIN, VR_WEIGHT, 1);
+
+  fxv_sel_lt(VR_WOUT, VR_LAMBDA, VR_C); // VR_WOUT <- VR_WOUT_0 if !lt else VR_WOUT_1
+  fxv_sel_eq(VR_WOUT, VR_WOUT, VR_WIN);      // VR_WOUT <- VR_WIN if eq else VR_WOUT
+
+  fxv_shb(VR_WEIGHT, VR_WOUT, -1);
+}
+
+ATTRIB_UNUSED static void compute_mult_stdp_offset() {
+  compute_a();
+
+  fxv_shb(VR_WIN, VR_WEIGHT, 1);
+
+  fxv_subbfs(VR_U, VR_WMAX, VR_WIN);
+  fxv_mulbfs(VR_T, VR_U, VR_LAMBDA);
+  fxv_mulbfs(VR_V, VR_C, VR_WIN);
+
+
+  fxv_mtacbf(VR_WIN);
+  fxv_mabfs(VR_WOUT_0, VR_A, VR_T);
+  fxv_mabfs(VR_WOUT_1, VR_A, VR_V);
+
+  /*fxv_subbfs(VR_WOUT_0, VR_WOUT_0, VR_TMP);*/
+
+  fxv_sel_lt(VR_WOUT, VR_WOUT_0, VR_WIN); // VR_WOUT <- VR_WOUT_0 if !lt else VR_WOUT_1
+  fxv_sel_eq(VR_WOUT, VR_WOUT, VR_WIN);      // VR_WOUT <- VR_WIN if eq else VR_WOUT
+
+  /*fxv_splatb(VR_TMP, 0x40);*/
+  /*fxv_subbfs(VR_WOUT_1, VR_WOUT, VR_TMP);*/
+  /*fxv_cmpb(VR_WOUT_1);*/
+  /*fxv_sel_lt(VR_WOUT, VR_TMP, VR_WOUT);*/
+
+  fxv_shb(VR_WEIGHT, VR_WOUT, -1);
+}
+
 
 
 ATTRIB_UNUSED static void compute_inc() {
@@ -256,7 +319,11 @@ void start() {
     fxv_addbm(VR_ACAUSAL, VR_ACAUSAL, VR_NULL_A);
 
     // compute STDP
-    compute_mult_stdp();
+    /*compute_mult_stdp();*/
+    /*compute_mult_stdp_symm();*/
+    /*compute_mult_stdp_symm_neg();*/
+    /*compute_box();*/
+    compute_mult_stdp_offset();
     /*compute_inc();*/
     /*compute_pass_through();*/
 

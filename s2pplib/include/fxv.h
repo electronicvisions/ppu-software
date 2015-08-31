@@ -116,6 +116,7 @@ typedef enum {
 // fractional byte arithmetic
 #define fxv_addbfs(x, y, z) _fxv_insn3("fxvaddbfs", x, y, z)
 #define fxv_addbfs_lt(x, y, z) _fxv_insn3_cond("fxvaddbfs", x, y, z, 2)
+#define fxv_addtacb(x, y) _fxv_insn2("fxvaddtacb", x, y)
 #define fxv_subbfs(x, y, z) _fxv_insn3("fxvsubbfs", x, y, z)
 #define fxv_mulbfs(x, y, z) _fxv_insn3("fxvmulbfs", x, y, z)
 #define fxv_mabfs(x, y, z) _fxv_insn3("fxvmabfs", x, y, z)
