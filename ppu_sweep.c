@@ -319,11 +319,11 @@ void start() {
     fxv_addbm(VR_ACAUSAL, VR_ACAUSAL, VR_NULL_A);
 
     // compute STDP
-    /*compute_mult_stdp();*/
+    compute_mult_stdp();
     /*compute_mult_stdp_symm();*/
     /*compute_mult_stdp_symm_neg();*/
     /*compute_box();*/
-    compute_mult_stdp_offset();
+    /*compute_mult_stdp_offset();*/
     /*compute_inc();*/
     /*compute_pass_through();*/
 
