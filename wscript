@@ -1,4 +1,10 @@
 
+def depends(dep):
+    pass
+
+def options(opt):
+    pass
+
 def configure(conf):
     conf.find_program('powerpc-linux-eabi-as', var='PPC_AS', mandatory=True)
     conf.find_program('powerpc-linux-eabi-ld', var='PPC_LD', mandatory=True)
