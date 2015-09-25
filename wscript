@@ -12,7 +12,7 @@ def configure(conf):
     conf.find_program('powerpc-linux-eabi-gcc', var='PPC_CC', mandatory=True)
 
     conf.env.SYSTEM = 'SYSTEM_HICANN_DLS_MINI'
-    conf.env.PPC_CSHELL_LINKER_SCRIPT = conf.path.make_node('cshell_linker.x').abspath()
+    conf.env.PPC_CSHELL_LINKER_SCRIPT = conf.path.make_node('sys/cshell_linker.x').abspath()
     conf.env.PPC_CFLAGS = [
         '-ffreestanding',
         '-Wall',
@@ -42,41 +42,41 @@ def build(bld):
 
     bld(
         name = 'create_synram',
-        source = 'synram.c' + s2pplib_source,
+        source = 'src/synram.c' + s2pplib_source,
         includes = [
             's2pplib/include'
         ],
         target = bld.path.find_or_declare('synram.raw'),
-        cshell = 'cshell.s',
+        cshell = 'sys/cshell.s',
         features = 'ppu_program',
         is_copy = True
-    )
+    ).post()
 
 
     bld(
         name = 'create_ppu_sweep',
-        source = 'ppu_sweep.c' + s2pplib_source,
+        source = 'src/ppu_sweep.c' + s2pplib_source,
         includes = [
             's2pplib/include',
         ],
         target = bld.path.find_or_declare('ppu_sweep.raw'),
-        cshell = 'cshell.s',
+        cshell = 'sys/cshell.s',
         features = 'ppu_program',
         is_copy = True
-    )
+    ).post()
 
 
     bld(
         name = 'create_rstdp',
-        source = 'rstdp.c lif.c' + s2pplib_source,
+        source = 'src/rstdp.c src/lif.c' + s2pplib_source,
         includes = [
             's2pplib/include',
         ],
         target = bld.path.find_or_declare('rstdp.raw'),
-        cshell = 'cshell.s',
+        cshell = 'sys/cshell.s',
         features = 'ppu_program',
         is_copy = True
-    )
+    ).post()
 
 
 
@@ -145,10 +145,12 @@ def ppu_cshell(self):
     self.mappings['.s'] = assemble
 
     # add include directories
-    self.includes_nodes = [
-        self.bld.path.find_dir(i)
-        for i in self.to_list(getattr(self, 'includes', []))
-    ]
+    self.includes_nodes = []
+    for i in self.to_list(getattr(self, 'includes', [])):
+        n = self.bld.path.find_dir(i)
+        if n is None:
+            raise RuntimeError('Include directory %s not found' % (i))
+        self.includes_nodes.append(n)
 
     # assemble the C-Shell wrapper
     cshell_src_node = self.to_nodes(self.to_list(getattr(self, 'cshell', [])))[0]
