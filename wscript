@@ -6,10 +6,19 @@ def options(opt):
     pass
 
 def configure(conf):
-    conf.find_program('powerpc-linux-eabi-as', var='PPC_AS', mandatory=True)
-    conf.find_program('powerpc-linux-eabi-ld', var='PPC_LD', mandatory=True)
-    conf.find_program('powerpc-linux-eabi-objcopy', var='PPC_OBJCOPY', mandatory=True)
-    conf.find_program('powerpc-linux-eabi-gcc', var='PPC_CC', mandatory=True)
+    conf.start_msg('Checking for PPU cross-compiler...')
+    conf.find_program('powerpc-linux-eabi-as', var='PPC_AS', mandatory=False)
+    conf.find_program('powerpc-linux-eabi-ld', var='PPC_LD', mandatory=False)
+    conf.find_program('powerpc-linux-eabi-objcopy', var='PPC_OBJCOPY', mandatory=False)
+    conf.find_program('powerpc-linux-eabi-gcc', var='PPC_CC', mandatory=False)
+
+    if conf.env['PPC_AS'] and conf.env['PPC_LD'] and conf.env['PPC_OBJCOPY'] and conf.env['PPC_CC']:
+        conf.env['HAS_CROSS_COMPILER'] = True
+        conf.end_msg('found')
+    else:
+        conf.env['HAS_CROSS_COMPILER'] = False
+        conf.end_msg('not found')
+
 
     conf.env.SYSTEM = 'SYSTEM_HICANN_DLS_MINI'
     conf.env.PPC_CSHELL_LINKER_SCRIPT = conf.path.make_node('sys/cshell_linker.x').abspath()
@@ -40,43 +49,44 @@ def build(bld):
         s2pplib/exp.c
     """
 
-    bld(
-        name = 'create_synram',
-        source = 'src/synram.c' + s2pplib_source,
-        includes = [
-            's2pplib/include'
-        ],
-        target = bld.path.find_or_declare('synram.raw'),
-        cshell = 'sys/cshell.s',
-        features = 'ppu_program',
-        is_copy = True
-    ).post()
+    if bld.env['HAS_CROSS_COMPILER']:
+        bld(
+            name = 'create_synram',
+            source = 'src/synram.c' + s2pplib_source,
+            includes = [
+                's2pplib/include'
+            ],
+            target = bld.path.find_or_declare('synram.raw'),
+            cshell = 'sys/cshell.s',
+            features = 'ppu_program',
+            is_copy = True
+        ).post()
 
 
-    bld(
-        name = 'create_ppu_sweep',
-        source = 'src/ppu_sweep.c' + s2pplib_source,
-        includes = [
-            's2pplib/include',
-        ],
-        target = bld.path.find_or_declare('ppu_sweep.raw'),
-        cshell = 'sys/cshell.s',
-        features = 'ppu_program',
-        is_copy = True
-    ).post()
+        bld(
+            name = 'create_ppu_sweep',
+            source = 'src/ppu_sweep.c' + s2pplib_source,
+            includes = [
+                's2pplib/include',
+            ],
+            target = bld.path.find_or_declare('ppu_sweep.raw'),
+            cshell = 'sys/cshell.s',
+            features = 'ppu_program',
+            is_copy = True
+        ).post()
 
 
-    bld(
-        name = 'create_rstdp',
-        source = 'src/rstdp.c src/lif.c' + s2pplib_source,
-        includes = [
-            's2pplib/include',
-        ],
-        target = bld.path.find_or_declare('rstdp.raw'),
-        cshell = 'sys/cshell.s',
-        features = 'ppu_program',
-        is_copy = True
-    ).post()
+        bld(
+            name = 'create_rstdp',
+            source = 'src/rstdp.c src/lif.c' + s2pplib_source,
+            includes = [
+                's2pplib/include',
+            ],
+            target = bld.path.find_or_declare('rstdp.raw'),
+            cshell = 'sys/cshell.s',
+            features = 'ppu_program',
+            is_copy = True
+        ).post()
 
 
 
