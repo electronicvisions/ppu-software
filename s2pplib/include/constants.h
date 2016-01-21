@@ -3,7 +3,7 @@
 
 #if defined(SYSTEM_HICANN_DLS_MINI)
 
-#	define NUM_SLICES           (2)
+#	define NUM_SLICES           (1)
 #	define NUM_BYTES_PER_SLICE (16)
 
 #elif defined(SYSTEM_HICANN_DLS)
