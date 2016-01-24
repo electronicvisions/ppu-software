@@ -7,10 +7,10 @@ def options(opt):
 
 def configure(conf):
     conf.start_msg('Checking for PPU cross-compiler...')
-    conf.find_program('powerpc-linux-eabi-as', var='PPC_AS', mandatory=False)
-    conf.find_program('powerpc-linux-eabi-ld', var='PPC_LD', mandatory=False)
-    conf.find_program('powerpc-linux-eabi-objcopy', var='PPC_OBJCOPY', mandatory=False)
-    conf.find_program('powerpc-linux-eabi-gcc', var='PPC_CC', mandatory=False)
+    conf.find_program('powerpc-linux-eabi-as', var='PPC_AS', mandatory=True)
+    conf.find_program('powerpc-linux-eabi-ld', var='PPC_LD', mandatory=True)
+    conf.find_program('powerpc-linux-eabi-objcopy', var='PPC_OBJCOPY', mandatory=True)
+    conf.find_program('powerpc-linux-eabi-gcc', var='PPC_CC', mandatory=True)
 
     if conf.env['PPC_AS'] and conf.env['PPC_LD'] and conf.env['PPC_OBJCOPY'] and conf.env['PPC_CC']:
         conf.env['HAS_CROSS_COMPILER'] = True
@@ -38,7 +38,6 @@ def configure(conf):
     conf.env.PPC_LDFLAGS = [
         '-static',
         '-nostdlib',
-        #'-L/superfast/home/sfriedma/s2pp-cross-comp/install/lib/gcc/powerpc-linux-eabi/4.8.2/',
         '-lgcc',
     ]
 

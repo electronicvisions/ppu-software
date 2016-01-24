@@ -11,6 +11,14 @@
 #define CADC_NOISE_BITS (1)
 
 
+typedef enum {
+  VR_TMP = 0,
+  VR_CAUSAL = 1,
+  VR_ACAUSAL = 2,
+  
+} vreg_t;
+ 
+
 /** Definitions for vector registers **/
 #define VR_TMP     0
 #define VR_CAUSAL  1
