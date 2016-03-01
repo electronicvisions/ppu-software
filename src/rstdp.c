@@ -274,8 +274,10 @@ void start() {
   /*syn_reset(loc_b, VR_RST, COND_ALWAYS);*/
 
   // reset values from CADC calibration
-  fxv_splatb(VR_NULL_C, 0x12);
-  fxv_splatb(VR_NULL_A, 0x12);
+  /*fxv_splatb(VR_NULL_C, 0x12);*/
+  /*fxv_splatb(VR_NULL_A, 0x12);*/
+  fxv_splatb(VR_NULL_C, 0xff - 0x50);
+  fxv_splatb(VR_NULL_A, 0xff - 0x64);
 
   // load initial reset values
   /*cadc_load_causal(VR_CAUSAL, 0);*/
@@ -360,8 +362,8 @@ void start() {
 
     // compute STDP
     /*compute_mult_stdp();*/
-    /*compute_add_stdp();*/
-    compute_weight_incr();
+    compute_add_stdp();
+    /*compute_weight_incr();*/
     /*compute_mult_stdp_symm();*/
     /*compute_mult_stdp_symm_neg();*/
     /*compute_box();*/
