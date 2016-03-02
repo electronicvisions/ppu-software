@@ -47,7 +47,7 @@ typedef enum {
 
 /** Constants **/
 static int loc_a = 0;
-static const int loc_b = 1;
+static int loc_b = 1;
 /*static const time_base_t update_period = 1000 * USEC;*/
 static const time_base_t update_period = 10 * USEC;
 static const int as_size = 400;
@@ -274,10 +274,12 @@ void start() {
   /*syn_reset(loc_b, VR_RST, COND_ALWAYS);*/
 
   // reset values from CADC calibration
-  /*fxv_splatb(VR_NULL_C, 0x12);*/
-  /*fxv_splatb(VR_NULL_A, 0x12);*/
-  fxv_splatb(VR_NULL_C, 0xff - 0x50);
-  fxv_splatb(VR_NULL_A, 0xff - 0x64);
+  fxv_splatb(VR_NULL_C, 0x0);
+  /*fxv_splatb(VR_NULL_A, 0x0);*/
+  /*fxv_splatb(VR_NULL_C, 0xff - 0xe6);*/
+  fxv_splatb(VR_NULL_A, 0xb);
+  /*fxv_splatb(VR_NULL_C, 0xff - 0x50);*/
+  /*fxv_splatb(VR_NULL_A, 0xff - 0x64);*/
 
   // load initial reset values
   /*cadc_load_causal(VR_CAUSAL, 0);*/
@@ -337,14 +339,16 @@ void start() {
   fxv_splatb(VR_LAMBDA, *param_lam);
   fxv_splatb(VR_C, *param_c);
 
-  loc_a =  *param_lam;
+  /*loc_a =  *param_lam;*/
 
   // loop for weight update
   i = 0;
   j = 0;
   /*while( 1 ) {*/
-  /*for(loc_a=0; loc_a<64; loc_a+=2) {*/
-  {
+  for(loc_a=0; loc_a<64; loc_a+=4) {
+  /*{*/
+
+    loc_b = loc_a + 1;
     // record current time
     t = get_time_base();
 
@@ -401,7 +405,7 @@ void start() {
     /*mailbox_write(3 * sizeof(fxv_array_t), (uint8_t*)&i, sizeof(i));*/
     /*mailbox_write(3 * sizeof(fxv_array_t) + sizeof(i), (uint8_t*)&(w.bytes[4]), 4);*/
     /*mailbox_write(3 * sizeof(fxv_array_t) + sizeof(i), (uint8_t*)as, as_size);*/
-    /*mailbox_write(1 * sizeof(fxv_array_t), (uint8_t*)param_weight, sizeof(uint32_t));*/
+    mailbox_write(4 * sizeof(fxv_array_t), (uint8_t*)param_lam, sizeof(uint32_t));
 
     /**signal = 0x42000000 + i;*/
 
