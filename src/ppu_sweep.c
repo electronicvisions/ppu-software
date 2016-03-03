@@ -74,6 +74,14 @@ void cadc_read(fxv_array_t* causal, fxv_array_t* acausal, int loc) {
 }
 
 ATTRIB_UNUSED static void compute_a() {
+  /*
+     1. shift right by CADC_NOISE_BITS
+     2. build the difference of the de-noised readings
+     3. subtract the offset from this difference and call the result A
+     4. if A minus the threshold is greater than zero: store A in TMP0
+     5. if A plus the threshold is less than zero: store A in TMP1
+     6. if A was negative, use TMP1 else use TMP0
+  */
   // check threshold
   /*fxv_subbm(VR_TMP_0, VR_CAUSAL, VR_THRESH);*/
   /*fxv_subbm(VR_TMP_1, VR_ACAUSAL, VR_THRESH);*/
@@ -126,6 +134,24 @@ ATTRIB_UNUSED static void compute_mult_stdp() {
   fxv_sel_eq(VR_WOUT, VR_WOUT, VR_WIN);      // VR_WOUT <- VR_WIN if eq else VR_WOUT
 
   fxv_shb(VR_WEIGHT, VR_WOUT, -1);
+}
+
+ATTRIB_UNUSED static void compute_add_stdp() {
+  compute_a();
+
+  fxv_shb(VR_WIN, VR_WEIGHT, 1);
+
+  /*fxv_subbfs(VR_U, VR_WMAX, VR_WIN);*/
+  /*fxv_mulbfs(VR_T, VR_U, VR_LAMBDA);*/
+  /*fxv_mulbfs(VR_V, VR_C, VR_WIN);*/
+
+  fxv_mtacbf(VR_WIN);
+  fxv_mabfs(VR_WOUT_0, VR_A, VR_LAMBDA);
+  /*fxv_mabfs(VR_WOUT_1, VR_A, VR_V);*/
+  /*fxv_sel_lt(VR_WOUT, VR_WOUT_0, VR_WOUT_1); // VR_WOUT <- VR_WOUT_0 if !lt else VR_WOUT_1*/
+  /*fxv_sel_eq(VR_WOUT, VR_WOUT, VR_WIN);      // VR_WOUT <- VR_WIN if eq else VR_WOUT*/
+
+  fxv_shb(VR_WEIGHT, VR_WOUT_0, -1);
 }
 
 ATTRIB_UNUSED static void compute_mult_stdp_symm() {
@@ -222,7 +248,9 @@ ATTRIB_UNUSED static void compute_inc() {
 
 ATTRIB_UNUSED static void compute_pass_through() {
   compute_a();
-  fxv_mov(VR_WEIGHT, VR_A);
+  /*fxv_mov(VR_WEIGHT, VR_A);*/
+  fxv_addbfs(VR_WEIGHT,VR_WEIGHT,VR_A);
+  /*fxv_addbm(VR_WEIGHT,VR_WEIGHT,VR_A);*/
 }
 
 
@@ -308,7 +336,7 @@ void start() {
   // loop for weight update
   i = 0;
   j = 0;
-  while( 1 ) {
+  while( *signal ) {
   /*for(i=0; i<20; ) {*/
   /*{*/
     // record current time
@@ -355,14 +383,15 @@ void start() {
     /*}*/
 
     mailbox_write(0 * sizeof(fxv_array_t), (uint8_t*)&w, sizeof(fxv_array_t));
-    /*mailbox_write(1 * sizeof(fxv_array_t), (uint8_t*)&offset, sizeof(fxv_array_t));*/
-    /*mailbox_write(1 * sizeof(fxv_array_t), (uint8_t*)&diff, sizeof(fxv_array_t));*/
-    /*mailbox_write(1 * sizeof(fxv_array_t), (uint8_t*)&c, sizeof(fxv_array_t));*/
-    /*mailbox_write(2 * sizeof(fxv_array_t), (uint8_t*)&a, sizeof(fxv_array_t));*/
-    /*mailbox_write(3 * sizeof(fxv_array_t), (uint8_t*)&i, sizeof(i));*/
+    mailbox_write(1 * sizeof(fxv_array_t), (uint8_t*)param_weight,
+                                            sizeof(fxv_array_t));
+    mailbox_write(2 * sizeof(fxv_array_t), (uint8_t*)&diff, sizeof(fxv_array_t));
+    mailbox_write(3 * sizeof(fxv_array_t), (uint8_t*)&c, sizeof(fxv_array_t));
+    mailbox_write(4 * sizeof(fxv_array_t), (uint8_t*)&offset, sizeof(fxv_array_t));
+    mailbox_write(5 * sizeof(fxv_array_t), (uint8_t*)&a, sizeof(fxv_array_t));
+    mailbox_write(6 * sizeof(fxv_array_t), (uint8_t*)&i, sizeof(fxv_array_t));
     /*mailbox_write(3 * sizeof(fxv_array_t) + sizeof(i), (uint8_t*)&(w.bytes[4]), 4);*/
     /*mailbox_write(3 * sizeof(fxv_array_t) + sizeof(i), (uint8_t*)as, as_size);*/
-    mailbox_write(1 * sizeof(fxv_array_t), (uint8_t*)param_weight, sizeof(uint32_t));
 
     /**signal = 0x42000000 + i;*/
 

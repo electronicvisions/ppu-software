@@ -77,7 +77,7 @@ def build(bld):
 
         bld(
             name = 'create_rstdp',
-            source = 'src/rstdp.c src/lif.c' + s2pplib_source,
+            source = 'src/rstdp.c' + s2pplib_source,
             includes = [
                 's2pplib/include',
             ],
@@ -87,6 +87,17 @@ def build(bld):
             is_copy = True
         ).post()
 
+        bld(
+            name = 'create_weight_incr',
+            source = 'src/weight_incr.c' + s2pplib_source,
+            includes = [
+                's2pplib/include',
+            ],
+            target = bld.path.find_or_declare('weight_incr.raw'),
+            cshell = 'sys/cshell.s',
+            features = 'ppu_program',
+            is_copy = True
+        ).post()
 
 
 from waflib import Task, TaskGen

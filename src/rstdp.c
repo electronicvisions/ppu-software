@@ -110,15 +110,6 @@ ATTRIB_UNUSED static void compute_a() {
   fxv_cmpb(VR_A);
 }
 
-ATTRIB_UNUSED static void compute_weight_incr()
-{
-  fxv_shb(VR_WIN, VR_WEIGHT, 1);
-
-  fxv_splatb(VR_TMP_0, 0x02);
-  fxv_addbfs(VR_WOUT,VR_WIN,VR_TMP_0);
-
-  fxv_shb(VR_WEIGHT, VR_WOUT, -1);
-}
 
 ATTRIB_UNUSED static void compute_mult_stdp() {
   compute_a();
