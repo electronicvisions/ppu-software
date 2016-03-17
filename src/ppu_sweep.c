@@ -46,8 +46,8 @@ typedef enum {
 
 
 /** Constants **/
-static const int loc_a = 0;
-static const int loc_b = 1;
+static int loc_a = 0;
+static int loc_b = 1;
 /*static const time_base_t update_period = 1000 * USEC;*/
 static const time_base_t update_period = 10 * USEC;
 static const int as_size = 400;
@@ -58,7 +58,7 @@ volatile uint32_t* param_thresh = (uint32_t*)(0x3900 + 0);
 volatile uint32_t* param_weight = (uint32_t*)(0x3900 + 4);
 volatile uint32_t* param_wmax   = (uint32_t*)(0x3900 + 8);
 volatile uint32_t* param_lam    = (uint32_t*)(0x3900 + 12);
-volatile uint32_t* param_c      = (uint32_t*)(0x3900 + 16);
+volatile uint32_t* param_row    = (uint32_t*)(0x3900 + 16);
 
 
 void cadc_read(fxv_array_t* causal, fxv_array_t* acausal, int loc) {
@@ -257,14 +257,33 @@ ATTRIB_UNUSED static void compute_pass_through() {
 void start() {
   fxv_array_t a, c, w, diff, offset;
   time_base_t t;
-  int i, j;
+  int i;//, j;
   /*uint8_t as[as_size];*/
 
   /**signal = 0;*/
   fxv_zero_vrf();  // clear registers
 
-  /*for(i=0; i<as_size; ++i)*/
-    /*as[i] = 0;*/
+  // set threshold on a+ and a-
+  /*fxv_splatb(VR_THRESH, 4);*/
+  fxv_splatb(VR_THRESH, 10);
+
+  // set weights to initial value
+  /*fxv_splatb(VR_WEIGHT, 0x20);*/
+  fxv_splatb(VR_WEIGHT, 0x30);
+
+  // init parameters
+  fxv_splatb(VR_WMAX, F8_MAX);
+  /*fxv_splatb(VR_LAMBDA, F8(0.4));*/
+  fxv_splatb(VR_LAMBDA, F8_MAX);
+  /*int32_t la = F8(0.4) * F8_MAX / 0x80;*/
+  /*fxv_splatb(VR_C, la & 0xff);*/
+
+  fxv_splatb(VR_WEIGHT, *param_weight);
+  fxv_splatb(VR_THRESH, *param_thresh);
+  fxv_splatb(VR_WMAX, *param_wmax);
+  fxv_splatb(VR_LAMBDA, *param_lam);
+  loc_a = *param_row;
+  loc_b = loc_a + 1;
 
   // reset correlation
   fxv_splatb(VR_RST, RST_CAUSAL | RST_ACAUSAL);
@@ -297,20 +316,6 @@ void start() {
   /*sync();*/
   /*mailbox_write(2 * sizeof(fxv_array_t), (uint8_t*)&a, sizeof(fxv_array_t));*/
 
-  // set threshold on a+ and a-
-  /*fxv_splatb(VR_THRESH, 4);*/
-  fxv_splatb(VR_THRESH, 10);
-
-  // set weights to initial value
-  /*fxv_splatb(VR_WEIGHT, 0x20);*/
-  fxv_splatb(VR_WEIGHT, 0x30);
-
-  // init parameters
-  fxv_splatb(VR_WMAX, F8_MAX);
-  /*fxv_splatb(VR_LAMBDA, F8(0.4));*/
-  fxv_splatb(VR_LAMBDA, F8_MAX);
-  /*int32_t la = F8(0.4) * F8_MAX / 0x80;*/
-  /*fxv_splatb(VR_C, la & 0xff);*/
   fxv_mov(VR_C, VR_LAMBDA);
 
   // wait for signal
@@ -326,16 +331,12 @@ void start() {
     /*: [> no input <]*/
     /*: "9" [> clobber <]*/
   /*);*/
-  fxv_splatb(VR_WEIGHT, *param_weight);
-  fxv_splatb(VR_THRESH, *param_thresh);
-  fxv_splatb(VR_WMAX, *param_wmax);
-  fxv_splatb(VR_LAMBDA, *param_lam);
-  fxv_splatb(VR_C, *param_c);
+
 
 
   // loop for weight update
   i = 0;
-  j = 0;
+  /*j = 0;*/
   while( *signal ) {
   /*for(i=0; i<20; ) {*/
   /*{*/
