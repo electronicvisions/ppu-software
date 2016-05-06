@@ -58,7 +58,7 @@ volatile uint32_t* param_thresh = (uint32_t*)(0x3900 + 0);
 volatile uint32_t* param_weight = (uint32_t*)(0x3900 + 4);
 volatile uint32_t* param_wmax   = (uint32_t*)(0x3900 + 8);
 volatile uint32_t* param_lam    = (uint32_t*)(0x3900 + 12);
-volatile uint32_t* param_c      = (uint32_t*)(0x3900 + 16);
+volatile uint32_t* param_max_row= (uint32_t*)(0x3900 + 16);
 
 
 void cadc_read(fxv_array_t* causal, fxv_array_t* acausal, int loc) {
@@ -110,117 +110,26 @@ ATTRIB_UNUSED static void compute_a() {
   fxv_cmpb(VR_A);
 }
 
-
-ATTRIB_UNUSED static void compute_mult_stdp() {
-  compute_a();
-
-  fxv_shb(VR_WIN, VR_WEIGHT, 1);
-
-  fxv_subbfs(VR_U, VR_WMAX, VR_WIN);
-  fxv_mulbfs(VR_T, VR_U, VR_LAMBDA);
-  fxv_mulbfs(VR_V, VR_C, VR_WIN);
-
-  fxv_mtacbf(VR_WIN);
-  fxv_mabfs(VR_WOUT_0, VR_A, VR_T);
-  fxv_mabfs(VR_WOUT_1, VR_A, VR_V);
-  fxv_sel_lt(VR_WOUT, VR_WOUT_0, VR_WOUT_1); // VR_WOUT <- VR_WOUT_0 if !lt else VR_WOUT_1
-  fxv_sel_eq(VR_WOUT, VR_WOUT, VR_WIN);      // VR_WOUT <- VR_WIN if eq else VR_WOUT
-
-  fxv_shb(VR_WEIGHT, VR_WOUT, -1);
-}
-
 ATTRIB_UNUSED static void compute_add_stdp() {
   compute_a();
 
   fxv_shb(VR_WIN, VR_WEIGHT, 1);
 
-  /*fxv_subbfs(VR_U, VR_WMAX, VR_WIN);*/
-  /*fxv_mulbfs(VR_T, VR_U, VR_LAMBDA);*/
-  /*fxv_mulbfs(VR_V, VR_C, VR_WIN);*/
+  // single operations
+  /*fxv_mulbfs(VR_WOUT_0, VR_A, VR_LAMBDA);*/
+  /*fxv_addbfs(VR_WOUT_0, VR_WOUT_0, VR_WIN);*/
 
+  // using fused MAC
   fxv_mtacbf(VR_WIN);
   fxv_mabfs(VR_WOUT_0, VR_A, VR_LAMBDA);
-  /*fxv_mabfs(VR_WOUT_1, VR_A, VR_V);*/
-  /*fxv_sel_lt(VR_WOUT, VR_WOUT_0, VR_WOUT_1); // VR_WOUT <- VR_WOUT_0 if !lt else VR_WOUT_1*/
-  /*fxv_sel_eq(VR_WOUT, VR_WOUT, VR_WIN);      // VR_WOUT <- VR_WIN if eq else VR_WOUT*/
 
-  fxv_shb(VR_WEIGHT, VR_WOUT_0, -1);
-}
-
-ATTRIB_UNUSED static void compute_mult_stdp_symm() {
-  compute_a();
-
-  fxv_shb(VR_WIN, VR_WEIGHT, 1);
-
-  fxv_subbfs(VR_U, VR_WMAX, VR_WIN);
-  fxv_mulbfs(VR_T, VR_U, VR_LAMBDA);
-  fxv_mulbfs(VR_V, VR_U, VR_C);
-
-  fxv_mtacbf(VR_WIN);
-  fxv_mabfs(VR_WOUT_0, VR_A, VR_T);
-  fxv_mabfs(VR_WOUT_1, VR_A, VR_V);
+  // don't go below zero
+  fxv_cmpb(VR_WOUT_0);
+  fxv_splatb(VR_WOUT_1, 0);
   fxv_sel_lt(VR_WOUT, VR_WOUT_0, VR_WOUT_1); // VR_WOUT <- VR_WOUT_0 if !lt else VR_WOUT_1
-  fxv_sel_eq(VR_WOUT, VR_WOUT, VR_WIN);      // VR_WOUT <- VR_WIN if eq else VR_WOUT
 
   fxv_shb(VR_WEIGHT, VR_WOUT, -1);
 }
-
-ATTRIB_UNUSED static void compute_mult_stdp_symm_neg() {
-  compute_a();
-
-  fxv_shb(VR_WIN, VR_WEIGHT, 1);
-
-  fxv_mulbfs(VR_T, VR_LAMBDA, VR_WIN);
-  fxv_mulbfs(VR_V, VR_C, VR_WIN);
-
-  fxv_mtacbf(VR_WIN);
-  fxv_mabfs(VR_WOUT_0, VR_A, VR_T);
-  fxv_mabfs(VR_WOUT_1, VR_A, VR_V);
-  fxv_sel_lt(VR_WOUT, VR_WOUT_0, VR_WOUT_1); // VR_WOUT <- VR_WOUT_0 if !lt else VR_WOUT_1
-  fxv_sel_eq(VR_WOUT, VR_WOUT, VR_WIN);      // VR_WOUT <- VR_WIN if eq else VR_WOUT
-
-  fxv_shb(VR_WEIGHT, VR_WOUT, -1);
-}
-
-ATTRIB_UNUSED static void compute_box() {
-  compute_a();
-
-  fxv_shb(VR_WIN, VR_WEIGHT, 1);
-
-  fxv_sel_lt(VR_WOUT, VR_LAMBDA, VR_C); // VR_WOUT <- VR_WOUT_0 if !lt else VR_WOUT_1
-  fxv_sel_eq(VR_WOUT, VR_WOUT, VR_WIN);      // VR_WOUT <- VR_WIN if eq else VR_WOUT
-
-  fxv_shb(VR_WEIGHT, VR_WOUT, -1);
-}
-
-ATTRIB_UNUSED static void compute_mult_stdp_offset() {
-  compute_a();
-
-  fxv_shb(VR_WIN, VR_WEIGHT, 1);
-
-  fxv_subbfs(VR_U, VR_WMAX, VR_WIN);
-  fxv_mulbfs(VR_T, VR_U, VR_LAMBDA);
-  fxv_mulbfs(VR_V, VR_C, VR_WIN);
-
-
-  fxv_mtacbf(VR_WIN);
-  fxv_mabfs(VR_WOUT_0, VR_A, VR_T);
-  fxv_mabfs(VR_WOUT_1, VR_A, VR_V);
-
-  /*fxv_subbfs(VR_WOUT_0, VR_WOUT_0, VR_TMP);*/
-
-  fxv_sel_lt(VR_WOUT, VR_WOUT_0, VR_WIN); // VR_WOUT <- VR_WOUT_0 if !lt else VR_WOUT_1
-  fxv_sel_eq(VR_WOUT, VR_WOUT, VR_WIN);      // VR_WOUT <- VR_WIN if eq else VR_WOUT
-
-  /*fxv_splatb(VR_TMP, 0x40);*/
-  /*fxv_subbfs(VR_WOUT_1, VR_WOUT, VR_TMP);*/
-  /*fxv_cmpb(VR_WOUT_1);*/
-  /*fxv_sel_lt(VR_WOUT, VR_TMP, VR_WOUT);*/
-
-  fxv_shb(VR_WEIGHT, VR_WOUT, -1);
-}
-
-
 
 ATTRIB_UNUSED static void compute_inc() {
   fxv_splatb(VR_TMP, 0x01);
@@ -266,9 +175,9 @@ void start() {
 
   // reset values from CADC calibration
   fxv_splatb(VR_NULL_C, 0x0);
-  /*fxv_splatb(VR_NULL_A, 0x0);*/
-  /*fxv_splatb(VR_NULL_C, 0xff - 0xe6);*/
-  fxv_splatb(VR_NULL_A, 0xb);
+  fxv_splatb(VR_NULL_A, 0x0);
+  /*fxv_splatb(VR_NULL_C, 0x0);*/
+  /*fxv_splatb(VR_NULL_A, 0x6);*/
   /*fxv_splatb(VR_NULL_C, 0xff - 0x50);*/
   /*fxv_splatb(VR_NULL_A, 0xff - 0x64);*/
 
@@ -328,7 +237,6 @@ void start() {
   fxv_splatb(VR_THRESH, *param_thresh);
   fxv_splatb(VR_WMAX, *param_wmax);
   fxv_splatb(VR_LAMBDA, *param_lam);
-  fxv_splatb(VR_C, *param_c);
 
   /*loc_a =  *param_lam;*/
 
@@ -336,7 +244,7 @@ void start() {
   i = 0;
   j = 0;
   /*while( 1 ) {*/
-  for(loc_a=0; loc_a<64; loc_a+=4) {
+  for(loc_a=0; loc_a<(*param_max_row)*2; loc_a+=2) {
   /*{*/
 
     loc_b = loc_a + 1;
@@ -356,13 +264,8 @@ void start() {
     fxv_addbm(VR_ACAUSAL, VR_ACAUSAL, VR_NULL_A);
 
     // compute STDP
-    /*compute_mult_stdp();*/
     compute_add_stdp();
     /*compute_weight_incr();*/
-    /*compute_mult_stdp_symm();*/
-    /*compute_mult_stdp_symm_neg();*/
-    /*compute_box();*/
-    /*compute_mult_stdp_offset();*/
     /*compute_inc();*/
     /*compute_pass_through();*/
 
@@ -397,6 +300,7 @@ void start() {
     /*mailbox_write(3 * sizeof(fxv_array_t) + sizeof(i), (uint8_t*)&(w.bytes[4]), 4);*/
     /*mailbox_write(3 * sizeof(fxv_array_t) + sizeof(i), (uint8_t*)as, as_size);*/
     mailbox_write(4 * sizeof(fxv_array_t), (uint8_t*)param_lam, sizeof(uint32_t));
+    mailbox_write(5 * sizeof(fxv_array_t), (uint8_t*)param_max_row, sizeof(uint32_t));
 
     /**signal = 0x42000000 + i;*/
 
