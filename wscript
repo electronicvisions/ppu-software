@@ -88,6 +88,18 @@ def build(bld):
         ).post()
 
         bld(
+            name = 'create_get_corr',
+            source = 'src/get_corr.c' + s2pplib_source,
+            includes = [
+                's2pplib/include',
+            ],
+            target = bld.path.find_or_declare('get_corr.raw'),
+            cshell = 'sys/cshell.s',
+            features = 'ppu_program',
+            is_copy = True
+        ).post()
+
+        bld(
             name = 'create_weight_incr',
             source = 'src/weight_incr.c' + s2pplib_source,
             includes = [
