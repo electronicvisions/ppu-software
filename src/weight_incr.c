@@ -1,11 +1,11 @@
+#include "libnux/mailbox.h"
+#include "libnux/fxv.h"
+#include "libnux/spr.h"
+#include "libnux/fxdpt.h"
+#include "libnux/attrib.h"
+
 #include "syn.h"
 #include "cadc.h"
-
-#include <mailbox.h>
-#include <fxv.h>
-#include <spr.h>
-#include <fxdpt.h>
-#include <attrib.h>
 
 #define USEC (98)
 #define CADC_NOISE_BITS (1)

@@ -1,7 +1,8 @@
-#include <sync.h>
-#include <fxv.h>
-#include <random.h>
-#include <mailbox.h>
+#include "libnux/sync.h"
+#include "libnux/fxv.h"
+#include "libnux/random.h"
+#include "libnux/mailbox.h"
+
 #include "syn.h"
 
 static unsigned const NUM_SYN_LOCATIONS = 64 + 4;

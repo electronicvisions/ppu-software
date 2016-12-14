@@ -1,8 +1,8 @@
 #pragma once
 
 #include <stdint.h>
-#include <fxv.h>
-#include <attrib.h>
+#include "libnux/fxv.h"
+#include "libnux/attrib.h"
 
 #include "memory_map.h"
 

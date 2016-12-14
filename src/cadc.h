@@ -1,7 +1,7 @@
 #pragma once
 
-#include <sync.h>
-#include <attrib.h>
+#include "libnux/sync.h"
+#include "libnux/attrib.h"
 
 #include "memory_map.h"
 
