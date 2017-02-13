@@ -15,3 +15,5 @@ static uint32_t const FXVIO_BUFFER_ENABLE_MASK = 0x200000;
 
 static uint32_t const SPIKE_BASE_ADDR = (0x3c000040 << 2);
 static uint32_t const DECODER_BASE_ADDR = (0x20014000 << 2);
+
+static uint32_t const COUNTER_BASE_ADDR = (0x3e000000 << 2);
